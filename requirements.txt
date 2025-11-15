@@ -1,0 +1,7 @@
+selenium
+pandas
+openpyxl
+pyautogui
+pyperclip
+streamlit
+Pillow
