@@ -22,12 +22,19 @@ def extrair_placa_km(observacao):
     """
     Extrai placa e KM do campo observação
     
-    Formatos aceitos:
-    - "PLACA: ABC1234   KM 123456"
-    - "PLACA: ABC1234"
+    Formatos aceitos para KM:
+    - "KM 123456"
+    - "KM: 220.878" (com pontos)
+    - "KM  265184" (com espaços extras)
+    - "KM  1207403" (milhões)
+    - "KM: 220,878" (com vírgulas)
+    
+    Formatos aceitos para placa:
+    - "PLACA: ABC1234" ou "PLACA ABC1234"
+    - "PLACAS: ABC1234" (plural)
     - "ABC1234" (só a placa)
-    - "VW ABC1234"
-    - Etc.
+    - "VW ABC1234" (com modelo)
+    - "DUCATO ABC1234"
     
     Returns:
         tuple: (placa, km) onde km pode ser None
@@ -37,28 +44,36 @@ def extrair_placa_km(observacao):
     
     observacao = str(observacao).strip().upper()
     
-    # Extrair KM se existir
+    # Extrair KM se existir - aceita pontos, vírgulas e espaços como separadores
     km = None
-    km_match = re.search(r'KM\s*[:=]?\s*(\d+)', observacao, re.IGNORECASE)
+    # Busca padrão: KM seguido de números com possíveis separadores
+    km_match = re.search(r'KM\s*[:=]?\s*([\d.,\s]+)', observacao, re.IGNORECASE)
     if km_match:
-        km = km_match.group(1)
+        km_str = km_match.group(1)
+        # Remover pontos, vírgulas e espaços (separadores de milhares)
+        km_clean = re.sub(r'[.,\s]', '', km_str)
+        # Pegar apenas os dígitos
+        km_digits = re.search(r'(\d+)', km_clean)
+        if km_digits:
+            km = km_digits.group(1)
     
     # Extrair placa
     placa = None
     
-    # Padrão 1: "PLACA: ABC1234" ou "PLACA ABC1234"
-    placa_match = re.search(r'PLACA\s*[:=]?\s*([A-Z]{3}[0-9][A-Z0-9][0-9]{2})', observacao)
+    # Padrão 1: "PLACA:" ou "PLACAS:" seguido da placa
+    placa_match = re.search(r'PLACAS?\s*[:=]?\s*([A-Z]{3}[0-9][A-Z0-9][0-9]{2})', observacao)
     if placa_match:
         placa = placa_match.group(1)
         return placa, km
     
     # Padrão 2: Buscar qualquer placa no formato brasileiro (antigo ou Mercosul)
+    # Ignorar se for parte de KM ou número
     placa_match = re.search(r'\b([A-Z]{3}[0-9][A-Z0-9][0-9]{2})\b', observacao)
     if placa_match:
         placa = placa_match.group(1)
         return placa, km
     
-    # Padrão 3: Buscar placa com hífen ou espaço
+    # Padrão 3: Buscar placa com hífen ou espaço (ex: ABC-1234 ou ABC 1234)
     placa_match = re.search(r'([A-Z]{3}[-\s]?[0-9][A-Z0-9][0-9]{2})', observacao)
     if placa_match:
         placa = placa_match.group(1).replace('-', '').replace(' ', '')
