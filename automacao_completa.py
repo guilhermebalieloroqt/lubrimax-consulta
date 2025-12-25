@@ -13,6 +13,8 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+import requests
+import time
 
 # Garantir que estamos no diretório correto
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -33,6 +35,49 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+
+def acordar_streamlit(max_tentativas=5, intervalo=60):
+    """
+    Envia requisições para o app Streamlit para evitar que ele entre em modo de suspensão.
+    O Streamlit Cloud pode demorar até 5 minutos para acordar um app em sleep mode.
+    
+    Args:
+        max_tentativas: Número máximo de tentativas
+        intervalo: Segundos entre tentativas
+    """
+    url_app = "https://lubrimax.streamlit.app"
+    
+    logging.info(f"⏰ Acordando Streamlit App: {url_app}")
+    logging.info(f"   (Até {max_tentativas} tentativas com {intervalo}s de intervalo)")
+    
+    for tentativa in range(1, max_tentativas + 1):
+        try:
+            logging.info(f"   Tentativa {tentativa}/{max_tentativas}...")
+            response = requests.get(url_app, timeout=120)  # Timeout maior para apps dormindo
+            
+            if response.status_code == 200:
+                # Verifica se é a página real ou página de "waking up"
+                if "Please wait" in response.text or "waking up" in response.text.lower():
+                    logging.info(f"   ⏳ App está acordando... aguardando {intervalo}s")
+                    time.sleep(intervalo)
+                    continue
+                else:
+                    logging.info("✅ Streamlit App acordado e respondendo!")
+                    return True
+            else:
+                logging.warning(f"   ⚠️ Status: {response.status_code}")
+                
+        except requests.exceptions.Timeout:
+            logging.info(f"   ⏳ Timeout - app pode estar acordando... aguardando {intervalo}s")
+        except Exception as e:
+            logging.warning(f"   ⚠️ Erro: {e}")
+        
+        if tentativa < max_tentativas:
+            time.sleep(intervalo)
+    
+    logging.warning("⚠️ Não foi possível confirmar que o app acordou completamente")
+    logging.info("   O app deve acordar automaticamente quando acessado manualmente")
+    return False
 
 def executar_comando(comando, descricao, critical=False):
     """
@@ -111,6 +156,11 @@ def main():
     if not (SCRIPT_DIR / '.git').exists():
         logging.critical("❌ Não é um repositório Git! Verifique o diretório.")
         return False
+    
+    # Etapa 0: Acordar o Streamlit ANTES de tudo (para ganhar tempo)
+    logging.info("\n⏰ ETAPA 0/5: Acordando Streamlit App (processo em paralelo)")
+    logging.info("   Isso evita que o app fique 'travado' quando você acessar de manhã")
+    acordar_streamlit(max_tentativas=3, intervalo=30)  # Primeira tentativa rápida
     
     # Etapa 1: Download dos relatórios
     logging.info("\n📥 ETAPA 1/5: Download dos relatórios")
@@ -202,7 +252,6 @@ def main():
             break
         elif tentativas_push < max_tentativas:
             logging.warning(f"⚠️ Falha no push. Tentando novamente em 5 segundos...")
-            import time
             time.sleep(5)
     
     if not sucesso_push:
@@ -213,6 +262,15 @@ def main():
         logging.error("   3. Execute manualmente: git push origin main")
         return False
     
+    # Acordar Streamlit após deploy
+    if sucesso_push:
+        logging.info("\n⏳ Aguardando deploy do Streamlit Cloud...")
+        logging.info("   O Streamlit Cloud detecta o push e faz redeploy automático")
+        time.sleep(60)  # Aguarda 1 minuto para o deploy iniciar
+        
+        logging.info("\n🔄 Garantindo que o app está acordado...")
+        acordar_streamlit(max_tentativas=5, intervalo=60)  # Tentativas mais persistentes
+
     # Etapa 5: Resumo final
     logging.info("\n📊 ETAPA 5/5: Resumo da execução")
     fim = datetime.now()

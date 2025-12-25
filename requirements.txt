@@ -5,3 +5,5 @@ pyautogui
 pyperclip
 streamlit
 Pillow
+requests
+python-dotenv

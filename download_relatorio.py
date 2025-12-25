@@ -40,6 +40,7 @@ def login_adj():
     time.sleep(2)
     campo_usuario = driver.find_element(By.ID, 'Editbox1')
     campo_usuario.send_keys('Lubrimax_Gerencia')
+    time.sleep(2)
     campo_senha = driver.find_element(By.ID, 'Editbox2')    
     campo_senha.send_keys('Lubrimax#24')
     botao_entrar = driver.find_element(By.ID, 'buttonLogOn')
@@ -54,11 +55,26 @@ def login_adj():
                 driver.switch_to.window(aba)
                 logging.info(f"[OK] Trocado para nova aba: {aba}")
                 break
-    time.sleep(5)
-    iAdmin = pyautogui.locateOnScreen(r'C:\Projetos\Lubrimax\Site_Consulta\imagens\iAdmin.png', confidence=0.9)
-    if iAdmin:
-        pyautogui.click(iAdmin)
-        logging.info("[OK] Clicado no ícone iAdmin") 
+    
+    # Tentativa de localizar a imagem com retries
+    max_retries = 5
+    iAdmin = None
+    
+    for attempt in range(max_retries):
+        try:
+            logging.info(f"Tentativa {attempt + 1}/{max_retries} de localizar iAdmin.png...")
+            time.sleep(5) # Espera carregar
+            iAdmin = pyautogui.locateOnScreen(r'C:\Projetos\Lubrimax\Site_Consulta\imagens\iAdmin.png', confidence=0.8)
+            if iAdmin:
+                pyautogui.click(iAdmin)
+                logging.info("[OK] Clicado no ícone iAdmin") 
+                break
+        except Exception as e:
+            logging.warning(f"Imagem não encontrada na tentativa {attempt + 1}: {e}")
+            if attempt == max_retries - 1:
+                logging.error("Não foi possível localizar o ícone iAdmin após várias tentativas.")
+                raise e
+    
     time.sleep(5)
     pyautogui.click(860,575)
     time.sleep(1)
@@ -105,11 +121,26 @@ def login():
                 driver.switch_to.window(aba)
                 logging.info(f"[OK] Trocado para nova aba: {aba}")
                 break
-    time.sleep(5)
-    iAdmin = pyautogui.locateOnScreen(r'C:\Projetos\Lubrimax\Site_Consulta\imagens\iAdmin.png', confidence=0.9)
-    if iAdmin:
-        pyautogui.click(iAdmin)
-        logging.info("[OK] Clicado no ícone iAdmin") 
+    
+    # Tentativa de localizar a imagem com retries
+    max_retries = 5
+    iAdmin = None
+    
+    for attempt in range(max_retries):
+        try:
+            logging.info(f"Tentativa {attempt + 1}/{max_retries} de localizar iAdmin.png...")
+            time.sleep(5) # Espera carregar
+            iAdmin = pyautogui.locateOnScreen(r'C:\Projetos\Lubrimax\Site_Consulta\imagens\iAdmin.png', confidence=0.8)
+            if iAdmin:
+                pyautogui.click(iAdmin)
+                logging.info("[OK] Clicado no ícone iAdmin") 
+                break
+        except Exception as e:
+            logging.warning(f"Imagem não encontrada na tentativa {attempt + 1}: {e}")
+            if attempt == max_retries - 1:
+                logging.error("Não foi possível localizar o ícone iAdmin após várias tentativas.")
+                raise e
+    
     time.sleep(5)
     pyautogui.click(604,674)
     time.sleep(2)
