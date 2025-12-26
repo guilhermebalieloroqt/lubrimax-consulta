@@ -189,7 +189,7 @@ col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
 with col_logo2:
     try:
         logo = Image.open("data/LOGO_png-removebg-preview.png")
-        st.image(logo, use_container_width=True)
+        st.image(logo, width='stretch')
     except:
         st.warning("Logo não encontrada")
 
